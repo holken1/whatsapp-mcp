@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: whatsapp-mcp
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python whatsapp_server.py streamable-http
+    envVars:
+      - key: CALLMEBOT_PHONE
+        sync: false
+      - key: CALLMEBOT_APIKEY
+        sync: false
