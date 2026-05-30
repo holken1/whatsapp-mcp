@@ -10,3 +10,5 @@ services:
         sync: false
       - key: CALLMEBOT_APIKEY
         sync: false
+      - key: BASE_URL
+        value: https://whatsapp-mcp-s9zs.onrender.com
