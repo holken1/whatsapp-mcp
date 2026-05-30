@@ -6,8 +6,6 @@ import time
 import urllib.parse
 
 import httpx
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
 from mcp.server.auth.provider import (
     AccessToken,
     AuthorizationCode,
@@ -23,26 +21,8 @@ from mcp.shared.auth import OAuthClientInformationFull, OAuthToken
 PHONE = os.environ["CALLMEBOT_PHONE"]
 API_KEY = os.environ["CALLMEBOT_APIKEY"]
 BASE_URL = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("BASE_URL", "http://localhost:10000")
-
-
-class FixGrantTypesMiddleware(BaseHTTPMiddleware):
-    """Add refresh_token to grant_types if missing — FastMCP requires it but some clients omit it."""
-    async def dispatch(self, request: Request, call_next):
-        if request.method == "POST" and request.url.path == "/register":
-            body = await request.body()
-            try:
-                data = json.loads(body)
-                grant_types = set(data.get("grant_types", []))
-                if "authorization_code" in grant_types:
-                    grant_types.add("refresh_token")
-                    data["grant_types"] = list(grant_types)
-                    body = json.dumps(data).encode()
-            except Exception:
-                pass
-            async def receive():
-                return {"type": "http.request", "body": body, "more_body": False}
-            request._receive = receive
-        return await call_next(request)
+OAUTH_CLIENT_ID = os.environ.get("OAUTH_CLIENT_ID", "claude-ai")
+OAUTH_CLIENT_SECRET = os.environ.get("OAUTH_CLIENT_SECRET", "")
 
 
 class SimpleOAuthProvider(OAuthAuthorizationServerProvider):
@@ -51,6 +31,17 @@ class SimpleOAuthProvider(OAuthAuthorizationServerProvider):
         self.auth_codes: dict[str, AuthorizationCode] = {}
         self.access_tokens: dict[str, AccessToken] = {}
         self.refresh_tokens: dict[str, RefreshToken] = {}
+
+    def preregister_client(self, client_id: str, client_secret: str) -> None:
+        from pydantic import AnyUrl
+        self.clients[client_id] = OAuthClientInformationFull(
+            client_id=client_id,
+            client_secret=client_secret or None,
+            redirect_uris=[AnyUrl("https://claude.ai/api/mcp/auth_callback")],
+            grant_types=["authorization_code", "refresh_token"],
+            response_types=["code"],
+            token_endpoint_auth_method="none" if not client_secret else "client_secret_post",
+        )
 
     async def get_client(self, client_id: str) -> OAuthClientInformationFull | None:
         return self.clients.get(client_id)
@@ -128,6 +119,7 @@ class SimpleOAuthProvider(OAuthAuthorizationServerProvider):
 
 
 auth_provider = SimpleOAuthProvider()
+auth_provider.preregister_client(OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET)
 
 mcp = FastMCP(
     "whatsapp",
@@ -157,8 +149,6 @@ if __name__ == "__main__":
     if transport == "streamable-http":
         import uvicorn
         port = int(os.environ.get("PORT", 10000))
-        app = mcp.streamable_http_app()
-        app.add_middleware(FixGrantTypesMiddleware)
-        uvicorn.run(app, host="0.0.0.0", port=port)
+        uvicorn.run(mcp.streamable_http_app(), host="0.0.0.0", port=port)
     else:
         mcp.run()
