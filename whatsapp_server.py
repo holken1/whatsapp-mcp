@@ -4,7 +4,7 @@ import urllib.parse
 import httpx
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("whatsapp")
+mcp = FastMCP("whatsapp", host="0.0.0.0")
 
 PHONE = os.environ["CALLMEBOT_PHONE"]
 API_KEY = os.environ["CALLMEBOT_APIKEY"]
