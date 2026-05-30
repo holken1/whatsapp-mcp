@@ -1,3 +1,4 @@
+import json
 import os
 import secrets
 import sys
@@ -5,6 +6,8 @@ import time
 import urllib.parse
 
 import httpx
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 from mcp.server.auth.provider import (
     AccessToken,
     AuthorizationCode,
@@ -20,6 +23,26 @@ from mcp.shared.auth import OAuthClientInformationFull, OAuthToken
 PHONE = os.environ["CALLMEBOT_PHONE"]
 API_KEY = os.environ["CALLMEBOT_APIKEY"]
 BASE_URL = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("BASE_URL", "http://localhost:10000")
+
+
+class FixGrantTypesMiddleware(BaseHTTPMiddleware):
+    """Add refresh_token to grant_types if missing — FastMCP requires it but some clients omit it."""
+    async def dispatch(self, request: Request, call_next):
+        if request.method == "POST" and request.url.path == "/register":
+            body = await request.body()
+            try:
+                data = json.loads(body)
+                grant_types = set(data.get("grant_types", []))
+                if "authorization_code" in grant_types:
+                    grant_types.add("refresh_token")
+                    data["grant_types"] = list(grant_types)
+                    body = json.dumps(data).encode()
+            except Exception:
+                pass
+            async def receive():
+                return {"type": "http.request", "body": body, "more_body": False}
+            request._receive = receive
+        return await call_next(request)
 
 
 class SimpleOAuthProvider(OAuthAuthorizationServerProvider):
@@ -134,6 +157,8 @@ if __name__ == "__main__":
     if transport == "streamable-http":
         import uvicorn
         port = int(os.environ.get("PORT", 10000))
-        uvicorn.run(mcp.streamable_http_app(), host="0.0.0.0", port=port)
+        app = mcp.streamable_http_app()
+        app.add_middleware(FixGrantTypesMiddleware)
+        uvicorn.run(app, host="0.0.0.0", port=port)
     else:
         mcp.run()
