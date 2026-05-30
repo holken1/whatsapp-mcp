@@ -19,7 +19,7 @@ from mcp.shared.auth import OAuthClientInformationFull, OAuthToken
 
 PHONE = os.environ["CALLMEBOT_PHONE"]
 API_KEY = os.environ["CALLMEBOT_APIKEY"]
-BASE_URL = os.environ.get("BASE_URL", "http://localhost:10000")
+BASE_URL = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("BASE_URL", "http://localhost:10000")
 
 
 class SimpleOAuthProvider(OAuthAuthorizationServerProvider):
