@@ -1,4 +1,5 @@
 import os
+import sys
 import urllib.parse
 import httpx
 from mcp.server.fastmcp import FastMCP
@@ -22,6 +23,10 @@ def send_whatsapp(message: str) -> str:
 
 
 if __name__ == "__main__":
-    import sys
     transport = sys.argv[1] if len(sys.argv) > 1 else "stdio"
-    mcp.run(transport=transport)
+    if transport == "streamable-http":
+        import uvicorn
+        port = int(os.environ.get("PORT", 10000))
+        uvicorn.run(mcp.streamable_http_app(), host="0.0.0.0", port=port)
+    else:
+        mcp.run()
