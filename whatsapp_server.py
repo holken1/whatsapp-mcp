@@ -13,9 +13,10 @@ API_KEY = os.environ["CALLMEBOT_APIKEY"]
 @mcp.tool()
 def send_whatsapp(message: str) -> str:
     """Send a WhatsApp message to the configured number via CallMeBot."""
+    encoded = urllib.parse.quote(message, safe="'")
     url = (
         f"https://api.callmebot.com/whatsapp.php"
-        f"?phone={PHONE}&text={urllib.parse.quote(message, safe=\"'\")}&apikey={API_KEY}"
+        f"?phone={PHONE}&text={encoded}&apikey={API_KEY}"
     )
     response = httpx.get(url, timeout=10)
     response.raise_for_status()
