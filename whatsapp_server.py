@@ -1,10 +1,56 @@
+import logging
 import os
 import sys
+import time
 import urllib.parse
 import httpx
 from mcp.server.fastmcp import FastMCP
 
+logger = logging.getLogger("whatsapp-mcp")
+
 mcp = FastMCP("whatsapp", host="0.0.0.0")
+
+
+def _client_ip(scope):
+    """Real client IP, honoring X-Forwarded-For (Render sits behind a proxy)."""
+    for name, value in scope.get("headers", []):
+        if name == b"x-forwarded-for":
+            return value.decode().split(",")[0].strip()
+    client = scope.get("client")
+    return client[0] if client else "-"
+
+
+class AccessLogMiddleware:
+    """Log one line per HTTP request. Pure ASGI so it won't buffer MCP streams."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        start = time.monotonic()
+        status = {"code": 0}
+
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                status["code"] = message["status"]
+            await send(message)
+
+        try:
+            await self.app(scope, receive, send_wrapper)
+        finally:
+            duration_ms = (time.monotonic() - start) * 1000
+            logger.info(
+                '%s "%s %s" %s %.1fms',
+                _client_ip(scope),
+                scope.get("method"),
+                scope.get("path"),
+                status["code"],
+                duration_ms,
+            )
 
 PHONE = os.environ["CALLMEBOT_PHONE"]
 API_KEY = os.environ["CALLMEBOT_APIKEY"]
@@ -28,6 +74,10 @@ if __name__ == "__main__":
     if transport == "streamable-http":
         import uvicorn
         from starlette.responses import JSONResponse
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s %(levelname)s %(name)s %(message)s",
+        )
         port = int(os.environ.get("PORT", 10000))
         app = mcp.streamable_http_app()
 
@@ -35,6 +85,9 @@ if __name__ == "__main__":
             return JSONResponse({"status": "ok"})
 
         app.add_route("/health", health, methods=["GET"])
-        uvicorn.run(app, host="0.0.0.0", port=port)
+        app.add_middleware(AccessLogMiddleware)
+        # access_log=False: our middleware already logs each request (with the
+        # real client IP and latency), so skip uvicorn's duplicate line.
+        uvicorn.run(app, host="0.0.0.0", port=port, access_log=False)
     else:
         mcp.run()

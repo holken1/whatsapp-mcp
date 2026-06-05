@@ -43,6 +43,8 @@ Everything lives in `whatsapp_server.py`:
 
 - **Transport selection** — if `sys.argv[1] == "streamable-http"`, uvicorn serves `mcp.streamable_http_app()` with a `GET /health` route added; otherwise `mcp.run()` uses stdio.
 
+- **Access logging** (HTTP mode only) — `AccessLogMiddleware`, a pure-ASGI middleware, logs one line per request (`<client-ip> "<method> <path>" <status> <ms>`). It reads the client IP from `X-Forwarded-For` so Render's proxy doesn't mask it, and being pure ASGI it won't buffer the MCP streaming responses. Uvicorn's own access log is disabled (`access_log=False`) to avoid duplicate lines.
+
 ## Deployment
 
 The `render.yaml` deploys this as a Render web service using Python 3.13. After deploying, add `https://<your-app>.onrender.com/mcp` as a connector at claude.ai/customize/connectors.
