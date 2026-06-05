@@ -46,3 +46,19 @@ Everything lives in `whatsapp_server.py`:
 ## Deployment
 
 The `render.yaml` deploys this as a Render web service using Python 3.13. After deploying, add `https://<your-app>.onrender.com/mcp` as a connector at claude.ai/customize/connectors.
+
+## Waking the service (cold starts)
+
+Render's free tier spins the service down after inactivity. The next request triggers a cold start (~30-60s, often a `502` mid-boot), which can cause the first MCP call from a cloud routine to fail.
+
+`warmup.sh` handles this: it polls `/health` until it returns `200`, then exits `0` (or exits `1` after `MAX_WAIT` seconds). In a claude.ai cloud routine, connect this repo and have the agent run `./warmup.sh` first, only invoking the MCP server once it succeeds.
+
+```bash
+./warmup.sh
+# Override defaults via env vars:
+HEALTH_URL=https://<your-app>.onrender.com/health MAX_WAIT=240 INTERVAL=5 ./warmup.sh
+```
+
+This avoids a 24/7 keep-alive bot, which would burn the free tier's 750 monthly instance-hours.
+
+> **Caveat:** this only helps if claude.ai connects to the MCP server *lazily* (on first tool call). If it connects eagerly at session start to enumerate tools, the cold-start failure happens before the script runs. Test by letting the service idle down (~15 min) and triggering the routine.
