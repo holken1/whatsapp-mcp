@@ -27,7 +27,14 @@ if __name__ == "__main__":
     transport = sys.argv[1] if len(sys.argv) > 1 else "stdio"
     if transport == "streamable-http":
         import uvicorn
+        from starlette.responses import JSONResponse
         port = int(os.environ.get("PORT", 10000))
-        uvicorn.run(mcp.streamable_http_app(), host="0.0.0.0", port=port)
+        app = mcp.streamable_http_app()
+
+        async def health(request):
+            return JSONResponse({"status": "ok"})
+
+        app.add_route("/health", health, methods=["GET"])
+        uvicorn.run(app, host="0.0.0.0", port=port)
     else:
         mcp.run()

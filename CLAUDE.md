@@ -23,7 +23,7 @@ python whatsapp_server.py
 python whatsapp_server.py streamable-http
 ```
 
-HTTP mode binds to `0.0.0.0:$PORT` (default 10000) and serves the MCP endpoint at `/mcp`.
+HTTP mode binds to `0.0.0.0:$PORT` (default 10000) and serves the MCP endpoint at `/mcp`. It also exposes a `GET /health` endpoint that returns `{"status": "ok"}` for plain HTTP health checks (e.g. `curl`, Render).
 
 ## Environment variables
 
@@ -41,7 +41,7 @@ Everything lives in `whatsapp_server.py`:
 
 - **`send_whatsapp` tool** — the only MCP tool. Makes a GET request to the CallMeBot API and returns the response text. Apostrophes are passed as literal `'` (not percent-encoded) because CallMeBot silently drops `%27`.
 
-- **Transport selection** — if `sys.argv[1] == "streamable-http"`, uvicorn serves `mcp.streamable_http_app()`; otherwise `mcp.run()` uses stdio.
+- **Transport selection** — if `sys.argv[1] == "streamable-http"`, uvicorn serves `mcp.streamable_http_app()` with a `GET /health` route added; otherwise `mcp.run()` uses stdio.
 
 ## Deployment
 
