@@ -19,6 +19,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Render server
-        run: |
-          curl -s -o /dev/null -w "%{http_code}" \
-            https://whatsapp-mcp-s9zs.onrender.com/health
+        run: ./warmup.sh
