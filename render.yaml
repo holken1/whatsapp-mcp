@@ -11,5 +11,3 @@ services:
         sync: false
       - key: CALLMEBOT_APIKEY
         sync: false
-      - key: OAUTH_CLIENT_ID
-        sync: false
