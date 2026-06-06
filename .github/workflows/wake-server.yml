@@ -15,8 +15,9 @@ on:
   workflow_dispatch:          # Möjlighet att trigga manuellt
 
 jobs:
-  ping:
+  warmup:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Render server
+      - uses: actions/checkout@v4
+      - name: Run warmup script to wake MCP server
         run: ./warmup.sh
