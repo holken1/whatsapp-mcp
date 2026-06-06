@@ -21,4 +21,4 @@ jobs:
       - name: Ping Render server
         run: |
           curl -s -o /dev/null -w "%{http_code}" \
-            https://whatsapp-mcp-s9zs.onrender.com/mcp
+            https://whatsapp-mcp-s9zs.onrender.com/health
