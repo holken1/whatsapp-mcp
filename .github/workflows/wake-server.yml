@@ -3,15 +3,7 @@
 name: Wake MCP server in time
 on:
   schedule:
-    # 07:10 CEST — täcker 07:00–07:20
-    - cron: '0 5 * * *'   # 07:00 CEST
-    - cron: '10 5 * * *'  # 07:10 CEST
-    - cron: '20 5 * * *'  # 07:20 CEST
-
-    # 10:30 CEST — täcker 10:20–10:40
-    - cron: '20 8 * * *'  # 10:20 CEST
-    - cron: '30 8 * * *'  # 10:30 CEST
-    - cron: '40 8 * * *'  # 10:40 CEST
+    - cron: '5 5 * * *'   # 07:05 CEST
   workflow_dispatch:          # Möjlighet att trigga manuellt
 
 jobs:
