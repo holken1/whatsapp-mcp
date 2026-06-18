@@ -69,6 +69,16 @@ def send_whatsapp(message: str) -> str:
     return f"Sent: {response.text.strip()}"
 
 
+@mcp.tool()
+def get_weather(location: str) -> str:
+    """Get current weather for a location using wttr.in."""
+    encoded = urllib.parse.quote(location)
+    url = f"https://wttr.in/{encoded}?format=3"
+    response = httpx.get(url, timeout=10, headers={"User-Agent": "curl/7.0"})
+    response.raise_for_status()
+    return response.text.strip()
+
+
 if __name__ == "__main__":
     transport = sys.argv[1] if len(sys.argv) > 1 else "stdio"
     if transport == "streamable-http":

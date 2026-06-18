@@ -4,7 +4,7 @@ services:
     runtime: python
     pythonVersion: "3.13"
     buildCommand: pip install -r requirements.txt
-    startCommand: python3 whatsapp_server.py streamable-http
+    startCommand: python3 mcp_server.py streamable-http
     healthCheckPath: /health
     envVars:
       - key: CALLMEBOT_PHONE

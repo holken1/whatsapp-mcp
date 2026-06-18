@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A single-file Python MCP server (`whatsapp_server.py`) that exposes a `send_whatsapp` tool. It sends WhatsApp messages via the [CallMeBot](https://www.callmebot.com/) API.
+A single-file Python MCP server (`mcp_server.py`) that exposes two tools: `send_whatsapp` (sends WhatsApp messages via the [CallMeBot](https://www.callmebot.com/) API) and `get_weather` (fetches current weather via [wttr.in](https://wttr.in), no API key required).
 
 ## Running
 
@@ -17,10 +17,10 @@ export CALLMEBOT_PHONE=+1234567890
 export CALLMEBOT_APIKEY=your_api_key
 
 # stdio transport (for Claude Code / local MCP clients)
-python whatsapp_server.py
+python mcp_server.py
 
 # HTTP transport (for remote MCP clients / Render deployment)
-python whatsapp_server.py streamable-http
+python mcp_server.py streamable-http
 ```
 
 HTTP mode binds to `0.0.0.0:$PORT` (default 10000) and serves the MCP endpoint at `/mcp`. It also exposes a `GET /health` endpoint that returns `{"status": "ok"}` for plain HTTP health checks (e.g. `curl`, Render).
@@ -35,11 +35,13 @@ HTTP mode binds to `0.0.0.0:$PORT` (default 10000) and serves the MCP endpoint a
 
 ## Architecture
 
-Everything lives in `whatsapp_server.py`:
+Everything lives in `mcp_server.py`:
 
 - **`FastMCP` instance** — no auth, bound to `0.0.0.0`.
 
-- **`send_whatsapp` tool** — the only MCP tool. Makes a GET request to the CallMeBot API and returns the response text. Apostrophes are passed as literal `'` (not percent-encoded) because CallMeBot silently drops `%27`.
+- **`send_whatsapp` tool** — Makes a GET request to the CallMeBot API and returns the response text. Apostrophes are passed as literal `'` (not percent-encoded) because CallMeBot silently drops `%27`.
+
+- **`get_weather` tool** — Fetches `https://wttr.in/{location}?format=3`, which returns a compact one-line summary (e.g. `Berlin: ⛅️ +18°C`). Sends `User-Agent: curl/7.0` so wttr.in returns plain text instead of an ANSI terminal view.
 
 - **Transport selection** — if `sys.argv[1] == "streamable-http"`, uvicorn serves `mcp.streamable_http_app()` with a `GET /health` route added; otherwise `mcp.run()` uses stdio.
 
