@@ -39,7 +39,7 @@ Everything lives in `mcp_server.py`:
 
 - **`FastMCP` instance** — no auth, bound to `0.0.0.0`.
 
-- **`send_whatsapp` tool** — Makes a GET request to the CallMeBot API and returns the response text. Apostrophes are passed as literal `'` (not percent-encoded) because CallMeBot silently drops `%27`.
+- **`send_whatsapp` tool** — Makes a GET request to the CallMeBot API and returns the response text. ASCII apostrophes (`'`, U+0027) are replaced with the Unicode right single quotation mark (`'`, U+2019) before URL-encoding, because CallMeBot silently drops both literal `'` and percent-encoded `%27`.
 
 - **`get_weather` tool** — Fetches `https://wttr.in/{location}?format=3`, which returns a compact one-line summary (e.g. `Berlin: ⛅️ +18°C`). Sends `User-Agent: curl/7.0` so wttr.in returns plain text instead of an ANSI terminal view.
 
